@@ -1,0 +1,23 @@
+{
+  "name": "tiny-express-server",
+  "version": "1.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon server/server.js",
+    "start": "node server/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.17.1",
+    "md5": "^2.3.0",
+    "nodemon": "^2.0.10",
+    "uuid": "^9.0.1"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "server/db/*"
+    ]
+  }
+}
