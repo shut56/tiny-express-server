@@ -1,5 +1,5 @@
 const md5 = require('md5');
-const { readFile, writeFile } = require('fs').promises;
+const { readFile, stat } = require('fs').promises;
 const dictionary = require('./dictionary');
 const fs = require('./fs');
 
@@ -18,6 +18,20 @@ const startProcess = () => {
       body: { login: '<your-login>', password: '<your-password>' },
     },
   };
+};
+
+const hasUsers = async () => {
+  const result = await stat(usersPath)
+    .then(() => {
+      console.log('Users is available');
+      return true;
+    })
+    .catch(() => {
+      console.log('Users is unavailable');
+      return false;
+    });
+
+  return result;
 };
 
 const auth = async (login, password) => {
@@ -61,6 +75,15 @@ const auth = async (login, password) => {
 };
 
 const getUser = async (id) => {
+  const userListStatus = await hasUsers();
+
+  if (!userListStatus) {
+    return {
+      status: 500,
+      message: 'User not found',
+    };
+  }
+
   const result = await readFile(usersPath)
     .then((dataString) => JSON.parse(dataString))
     .then((users) => {
@@ -99,6 +122,15 @@ const getUser = async (id) => {
 };
 
 const updateUser = async (id, name) => {
+  const userListStatus = await hasUsers();
+
+  if (!userListStatus) {
+    return {
+      status: 500,
+      message: 'User not found',
+    };
+  }
+
   const result = await readFile(usersPath)
     .then((dataString) => JSON.parse(dataString))
     .then((users) => {
@@ -125,6 +157,15 @@ const updateUser = async (id, name) => {
 };
 
 const addProperties = async (id, body) => {
+  const userListStatus = await hasUsers();
+
+  if (!userListStatus) {
+    return {
+      status: 500,
+      message: 'User not found',
+    };
+  }
+
   const result = await readFile(usersPath)
     .then((dataString) => JSON.parse(dataString))
     .then((users) => {
@@ -151,17 +192,72 @@ const addProperties = async (id, body) => {
 };
 
 const deleteUser = async (id, token) => {
-  const result = await readFile(usersPath)
+  const userListStatus = await hasUsers();
+
+  if (!userListStatus) {
+    return {
+      status: 500,
+      message: 'User not found',
+    };
+  }
+
+  const result = readFile(usersPath)
     .then((dataString) => JSON.parse(dataString))
     .then((users) => {
-      const foundUser = users.find((user) => user.id === id);
-      const isUser = foundUser.hash === token.split(' ')[1];
+      const foundUser = users?.find((user) => user.id === id);
+
+      if (!foundUser) {
+        throw Error('User not found');
+      }
+
+      if (!token) {
+        throw Error('Invalid token');
+      }
+
+      const isUser = foundUser?.hash === token?.split(' ')[1];
 
       if (foundUser && isUser) {
         return removeUser({ id: foundUser.id, users });
+      } else {
+        throw Error('Invalid token');
+      }
+    })
+    .catch((err) => {
+      return {
+        status: 401,
+        message: err.message,
+      };
+    });
+
+  return result;
+};
+
+const getUserHash = async (id) => {
+  const userListStatus = await hasUsers();
+
+  if (!userListStatus) {
+    return {
+      status: 500,
+      message: 'User not found',
+    };
+  }
+
+  const result = readFile(usersPath)
+    .then((dataString) => JSON.parse(dataString))
+    .then((users) => {
+      const foundUser = users?.find((user) => user.id === id);
+
+      if (foundUser?.id && foundUser?.hash) {
+        return {
+          status: 200,
+          data: {
+            userId: foundUser.id,
+            userHash: foundUser.hash,
+          },
+        };
       }
 
-      throw Error('Incorrect token');
+      throw Error('User not found');
     })
     .catch((err) => {
       return {
@@ -180,4 +276,5 @@ module.exports = {
   updateUser,
   addProperties,
   deleteUser,
+  getUserHash,
 };

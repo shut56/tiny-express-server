@@ -4,9 +4,17 @@ const express = require('express');
 const cors = require('cors');
 
 const config = require('./config.js');
+const { guides } = require('./guides.js');
 
-const { startProcess, auth, getUser, updateUser, addProperties, deleteUser } =
-  config;
+const {
+  startProcess,
+  auth,
+  getUser,
+  updateUser,
+  addProperties,
+  deleteUser,
+  getUserHash,
+} = config;
 
 const server = express();
 
@@ -35,6 +43,12 @@ server.get('/', (req, res) => {
           <p>Host: ${req.protocol}://${req.headers.host}</p>
           <p>Method: GET</p>
           <p>URL: /api/v1/learn/api/start</p>
+        </div>
+        <h2>Stuck? Check out the help section</h2>
+        <div style="${style}">
+          <p>Host: ${req.protocol}://${req.headers.host}</p>
+          <p>Method: GET</p>
+          <p>URL: /api/v1/learn/api/help</p>
         </div>
         <h2>Attention</h2>
         <p>Your data will be available within one session (about 1 hour). After a server restart, all data is deleted automatically.</p>
@@ -77,6 +91,31 @@ server.delete('/api/v1/learn/api/user/:id', async (req, res) => {
   const { authorization } = req?.headers;
   const { status, ...response } = await deleteUser(id, authorization);
   res.status(status).json(response);
+});
+
+server.get('/api/v1/learn/api/user/:id/hash', async (req, res) => {
+  const { id } = req?.params;
+  const { status, ...response } = await getUserHash(id);
+  res.status(status).json(response);
+});
+
+server.get('/api/v1/learn/api/user/:id/hash', async (req, res) => {
+  const { id } = req?.params;
+  const { status, ...response } = await getUserHash(id);
+  res.status(status).json(response);
+});
+
+server.get('/api/v1/learn/api/help', (_, res) => {
+  res.json(guides());
+});
+
+server.all('/*', (req, res) => {
+  res.status(404).json({
+    status: 'Error',
+    message: `The requested URL [${req.method.toUpperCase()}] ${
+      req.url
+    } was not found on this server.`,
+  });
 });
 
 server.listen(PORT);
